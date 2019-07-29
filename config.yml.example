@@ -1,0 +1,13 @@
+networks:
+- name: pubnet
+  horizon_url: https://horizon.example.com
+  accounts:
+  - account_id: ABC123XYZ
+    account_name: Account one
+  - account_id: DEF456ABC
+    account_name: Account two
+- name: testnet
+  horizon_url: https://horizon-testnet.example.com
+  accounts:
+  - account_id: QWE789DEF
+    account_name: Testnet test account
