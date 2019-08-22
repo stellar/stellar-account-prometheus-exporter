@@ -1,3 +1,3 @@
 def run():
-    import exporter
+    from . import exporter
     exporter.main()
