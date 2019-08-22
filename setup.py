@@ -10,6 +10,7 @@ setuptools.setup(
     author_email="ops@stellar.org",
     description="Export stellar account balance in prometheus format",
     long_description=long_description,
+    long_description_content_type="text/markdown",
     url="https://github.com/stellar/stellar-account-prometheus-exporter",
     include_package_data=True,
     keywords=["prometheus", "exporter", "stellar"],
