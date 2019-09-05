@@ -39,3 +39,37 @@ Each metric has the following labels:
  * *account_id* - account ID from the configuration file
  * *account_name* - account name, as per configuration file
  * *asset_type* - asset type
+
+# Installing from pypi
+
+To download/test package in pypi you can use venv:
+```
+python3 -m venv venv
+. venv/bin/activate
+```
+
+Install:
+```
+python3 -m pip install stellar_account_prometheus_exporter
+```
+
+Run:
+```
+./venv/bin/stellar-account-prometheus-exporter --config /path/to/config.yaml
+```
+
+# Releasing new version
+
+* ensure you bumped version number in setup.py. PyPi does not allow version reuse
+* build new package:
+```
+python3 setup.py sdist bdist_wheel
+```
+* push to testpypi:
+```
+python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+```
+* test by installing the package (see above). If all good release:
+```
+python3 -m twine upload dist/*
+```
