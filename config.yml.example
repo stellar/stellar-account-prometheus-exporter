@@ -1,13 +1,13 @@
 networks:
-- name: pubnet
-  horizon_url: https://horizon.example.com
-  accounts:
-  - account_id: ABC123XYZ
-    account_name: Account one
-  - account_id: DEF456ABC
-    account_name: Account two
 - name: testnet
-  horizon_url: https://horizon-testnet.example.com
+  horizon_url: https://horizon-testnet.stellar.org
   accounts:
-  - account_id: QWE789DEF
-    account_name: Testnet test account
+  - account_id: GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR
+    account_name: friendbot
+#- name: pubnet
+#  horizon_url: https://horizon.stellar.org  # Use your own horizon endpoint if you have one
+#  accounts:
+#  - account_id: ABC123XYZ
+#    account_name: Account one
+#  - account_id: DEF456ABC
+#    account_name: Account two
