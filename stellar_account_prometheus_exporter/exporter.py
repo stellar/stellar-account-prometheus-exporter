@@ -55,7 +55,7 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.registry = CollectorRegistry()
-        label_names = ["network", "account_id", "account_name", "asset_type"]
+        label_names = ["network", "account_id", "account_name", "asset_type", "asset_name"]
         m_balance = Gauge("stellar_account_balance", "Stellar core account balance",
                           label_names, registry=self.registry)
         m_buying_liabilities = Gauge("stellar_account_buying_liabilities", "Stellar core account buying liabilities",
@@ -84,7 +84,11 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                     self.error(500, "Error - no balances found for account {}".format(account["account_id"]))
                     return
                 for balance in r.json()["balances"]:
-                    labels = [network["name"], account["account_id"], account["account_name"], balance["asset_type"]]
+                    if balance["asset_type"] == "native":
+                      asset_name = "XLM"
+                    else:
+                      asset_name = f'{balance["asset_issuer"]}:{balance["asset_code"]}'
+                    labels = [network["name"], account["account_id"], account["account_name"], balance["asset_type"], asset_name]
                     m_balance.labels(*labels).set(balance["balance"])
                     m_buying_liabilities.labels(*labels).set(balance["buying_liabilities"])
                     m_selling_liabilities.labels(*labels).set(balance["selling_liabilities"])
