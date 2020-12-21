@@ -62,6 +62,8 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                                      label_names, registry=self.registry)
         m_selling_liabilities = Gauge("stellar_account_selling_liabilities", "Stellar core account selling liabilities",
                                       label_names, registry=self.registry)
+        m_num_sponsored = Gauge("stellar_account_num_sponsored", "Stellar core account number of sponsored entries",
+                                      label_names, registry=self.registry)
 
         for network in config["networks"]:
             if "accounts" not in network or "name" not in network or "horizon_url" not in network:
@@ -83,11 +85,15 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                 if "balances" not in r.json():
                     self.error(500, "Error - no balances found for account {}".format(account["account_id"]))
                     return
+                if "num_sponsored" not in r.json():
+                    self.error(500, "Error - no num_sponsored found for account {}".format(account["account_id"]))
+                    return
                 for balance in r.json()["balances"]:
                     labels = [network["name"], account["account_id"], account["account_name"], balance["asset_type"]]
                     m_balance.labels(*labels).set(balance["balance"])
                     m_buying_liabilities.labels(*labels).set(balance["buying_liabilities"])
                     m_selling_liabilities.labels(*labels).set(balance["selling_liabilities"])
+                    m_num_sponsored.labels(*labels).set(r.json()["num_sponsored"])
 
         output = generate_latest(self.registry)
         self.send_response(200)
