@@ -55,19 +55,22 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.registry = CollectorRegistry()
-        label_names = ["network", "account_id", "account_name", "asset_type"]
-        m_balance = Gauge("stellar_account_balance", "Stellar core account balance",
-                          label_names, registry=self.registry)
-        m_buying_liabilities = Gauge("stellar_account_buying_liabilities", "Stellar core account buying liabilities",
-                                     label_names, registry=self.registry)
-        m_selling_liabilities = Gauge("stellar_account_selling_liabilities", "Stellar core account selling liabilities",
-                                      label_names, registry=self.registry)
+
+        account_label_names = ["network", "account_id", "account_name"]
         m_num_sponsored = Gauge("stellar_account_num_sponsored", "Stellar core account number of sponsored entries",
-                                label_names, registry=self.registry)
+                                account_label_names, registry=self.registry)
         m_num_sponsoring = Gauge("stellar_account_num_sponsoring", "Stellar core account number of sponsoring entries",
-                                 label_names, registry=self.registry)
+                                 account_label_names, registry=self.registry)
+
+        balance_label_names = account_label_names + ["asset_type"]
+        m_balance = Gauge("stellar_account_balance", "Stellar core account balance",
+                          balance_label_names, registry=self.registry)
+        m_buying_liabilities = Gauge("stellar_account_buying_liabilities", "Stellar core account buying liabilities",
+                                     balance_label_names, registry=self.registry)
+        m_selling_liabilities = Gauge("stellar_account_selling_liabilities", "Stellar core account selling liabilities",
+                                      balance_label_names, registry=self.registry)
         m_available_balance = Gauge("stellar_account_available_balance", "Stellar core account available balance, i.e. the account balance exceding the minimum required balance of `(2 + subentry_count + num_sponsoring - num_sponsored) * 0.5 + liabilities.selling`",
-                                    label_names, registry=self.registry)
+                                    balance_label_names[:3], registry=self.registry)
 
         for network in config["networks"]:
             if "accounts" not in network or "name" not in network or "horizon_url" not in network:
