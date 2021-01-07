@@ -66,8 +66,8 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                                 label_names, registry=self.registry)
         m_num_sponsoring = Gauge("stellar_account_num_sponsoring", "Stellar core account number of sponsoring entries",
                                  label_names, registry=self.registry)
-        m_minimum_balance = Gauge("stellar_account_minimum_balance", "Stellar core account minimum required balance. It accounts for `(2 + subentry_count + num_sponsoring - num_sponsored) * 0.5 + liabilities.selling`",
-                                  label_names, registry=self.registry)
+        m_available_balance = Gauge("stellar_account_available_balance", "Stellar core account available balance, i.e. the account balance exceding the minimum required balance of `(2 + subentry_count + num_sponsoring - num_sponsored) * 0.5 + liabilities.selling`",
+                                    label_names, registry=self.registry)
 
         for network in config["networks"]:
             if "accounts" not in network or "name" not in network or "horizon_url" not in network:
@@ -110,8 +110,9 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                     m_buying_liabilities.labels(*labels).set(balance["buying_liabilities"])
                     m_selling_liabilities.labels(*labels).set(balance["selling_liabilities"])
 
-                    min_balance = balance["selling_liabilities"] + 0.5 * (2 + r.json()["subentry_count"] + r.json()["num_sponsoring"] - r.json()["num_sponsored"])
-                    m_minimum_balance.labels(*labels).set(min_balance)
+                    # ref: https://github.com/stellar/stellar-protocol/blob/a664806db12635ab4d49b3f006c8f1b578fba8d4/core/cap-0033.md#reserve-requirement
+                    minimum_required_balance = balance["selling_liabilities"] + 0.5 * (2 + r.json()["subentry_count"] + r.json()["num_sponsoring"] - r.json()["num_sponsored"])
+                    m_available_balance.labels(*labels).set(balance["balance"] - minimum_required_balance)
 
         output = generate_latest(self.registry)
         self.send_response(200)
