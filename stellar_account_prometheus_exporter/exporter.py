@@ -117,7 +117,7 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                     minimum_required_balance = float(balance["selling_liabilities"])
                     if balance["asset_type"] == "native":
                         minimum_required_balance += 0.5 * (2 + r.json()["subentry_count"] + r.json()["num_sponsoring"] - r.json()["num_sponsored"])
-                    m_available_balance.labels(*labels).set(balance["balance"] - minimum_required_balance)
+                    m_available_balance.labels(*labels).set(float(balance["balance"]) - minimum_required_balance)
 
         output = generate_latest(self.registry)
         self.send_response(200)
