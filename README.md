@@ -33,6 +33,8 @@ For each account the following metrics are exported:
  * *stellar_account_balance*
  * *stellar_account_buying_liabilities*
  * *stellar_account_selling_liabilities*
+ * *stellar_account_num_sponsored*
+ * *stellar_account_num_sponsoring*
 
 Each metric has the following labels:
  * *network* - network name from the configuration file
