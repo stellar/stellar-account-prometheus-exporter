@@ -92,19 +92,13 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                 if "balances" not in r.json():
                     self.error(500, "Error - no balances found for account {}".format(account["account_id"]))
                     return
-                if "num_sponsored" not in r.json():
-                    self.error(500, "Error - no num_sponsored found for account {}".format(account["account_id"]))
-                    return
-                if "num_sponsoring" not in r.json():
-                    self.error(500, "Error - no num_sponsoring found for account {}".format(account["account_id"]))
-                    return
                 if "subentry_count" not in r.json():
                     self.error(500, "Error - no subentry_count found for account {}".format(account["account_id"]))
                     return
 
                 labels = [network["name"], account["account_id"], account["account_name"]]
-                m_num_sponsored.labels(*labels).set(r.json()["num_sponsored"])
-                m_num_sponsoring.labels(*labels).set(r.json()["num_sponsoring"])
+                m_num_sponsored.labels(*labels).set(r.json().get("num_sponsored", 0))
+                m_num_sponsoring.labels(*labels).set(r.json().get("num_sponsoring", 0))
 
                 for balance in r.json()["balances"]:
                     labels = [network["name"], account["account_id"], account["account_name"], balance["asset_type"]]
@@ -116,7 +110,7 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                     # ref: https://github.com/stellar/stellar-protocol/blob/a664806db12635ab4d49b3f006c8f1b578fba8d4/core/cap-0033.md#reserve-requirement
                     minimum_required_balance = float(balance["selling_liabilities"])
                     if balance["asset_type"] == "native":
-                        minimum_required_balance += 0.5 * (2 + r.json()["subentry_count"] + r.json()["num_sponsoring"] - r.json()["num_sponsored"])
+                        minimum_required_balance += 0.5 * (2 + r.json()["subentry_count"] + r.json().get("num_sponsoring", 0) - r.json().get("num_sponsored", 0))
                     m_available_balance.labels(*labels).set(float(balance["balance"]) - minimum_required_balance)
 
         output = generate_latest(self.registry)
