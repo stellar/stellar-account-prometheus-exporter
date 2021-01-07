@@ -114,7 +114,7 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                     m_selling_liabilities.labels(*labels).set(balance["selling_liabilities"])
 
                     # ref: https://github.com/stellar/stellar-protocol/blob/a664806db12635ab4d49b3f006c8f1b578fba8d4/core/cap-0033.md#reserve-requirement
-                    minimum_required_balance = balance["selling_liabilities"]
+                    minimum_required_balance = float(balance["selling_liabilities"])
                     if balance["asset_type"] == "native":
                         minimum_required_balance += 0.5 * (2 + r.json()["subentry_count"] + r.json()["num_sponsoring"] - r.json()["num_sponsored"])
                     m_available_balance.labels(*labels).set(balance["balance"] - minimum_required_balance)
