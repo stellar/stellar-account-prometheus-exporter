@@ -93,13 +93,16 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                 if "num_sponsoring" not in r.json():
                     self.error(500, "Error - no num_sponsoring found for account {}".format(account["account_id"]))
                     return
+
+                labels = [network["name"], account["account_id"], account["account_name"]]
+                m_num_sponsored.labels(*labels).set(r.json()["num_sponsored"])
+                m_num_sponsoring.labels(*labels).set(r.json()["num_sponsoring"])
+
                 for balance in r.json()["balances"]:
                     labels = [network["name"], account["account_id"], account["account_name"], balance["asset_type"]]
                     m_balance.labels(*labels).set(balance["balance"])
                     m_buying_liabilities.labels(*labels).set(balance["buying_liabilities"])
                     m_selling_liabilities.labels(*labels).set(balance["selling_liabilities"])
-                    m_num_sponsored.labels(*labels).set(r.json()["num_sponsored"])
-                    m_num_sponsoring.labels(*labels).set(r.json()["num_sponsoring"])
 
         output = generate_latest(self.registry)
         self.send_response(200)
