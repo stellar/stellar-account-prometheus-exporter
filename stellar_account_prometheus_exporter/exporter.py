@@ -70,7 +70,7 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
         m_selling_liabilities = Gauge("stellar_account_selling_liabilities", "Stellar core account selling liabilities",
                                       balance_label_names, registry=self.registry)
         m_available_balance = Gauge("stellar_account_available_balance", "Stellar core account available balance, i.e. the account balance exceding the minimum required balance of `(2 + subentry_count + num_sponsoring - num_sponsored) * 0.5 + liabilities.selling`",
-                                    balance_label_names[:3], registry=self.registry)
+                                    balance_label_names, registry=self.registry)
 
         for network in config["networks"]:
             if "accounts" not in network or "name" not in network or "horizon_url" not in network:
