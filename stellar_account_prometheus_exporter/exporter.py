@@ -63,9 +63,9 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
         m_selling_liabilities = Gauge("stellar_account_selling_liabilities", "Stellar core account selling liabilities",
                                       label_names, registry=self.registry)
         m_num_sponsored = Gauge("stellar_account_num_sponsored", "Stellar core account number of sponsored entries",
-                                      label_names, registry=self.registry)
+                                label_names, registry=self.registry)
         m_num_sponsoring = Gauge("stellar_account_num_sponsoring", "Stellar core account number of sponsoring entries",
-                                      label_names, registry=self.registry)
+                                 label_names, registry=self.registry)
 
         for network in config["networks"]:
             if "accounts" not in network or "name" not in network or "horizon_url" not in network:
