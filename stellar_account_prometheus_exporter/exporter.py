@@ -66,6 +66,8 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                                 label_names, registry=self.registry)
         m_num_sponsoring = Gauge("stellar_account_num_sponsoring", "Stellar core account number of sponsoring entries",
                                  label_names, registry=self.registry)
+        m_minimum_balance = Gauge("stellar_account_minimum_balance", "Stellar core account minimum required balance. It accounts for `(2 + subentry_count + num_sponsoring - num_sponsored) * 0.5 + liabilities.selling`",
+                                  label_names, registry=self.registry)
 
         for network in config["networks"]:
             if "accounts" not in network or "name" not in network or "horizon_url" not in network:
@@ -93,6 +95,9 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                 if "num_sponsoring" not in r.json():
                     self.error(500, "Error - no num_sponsoring found for account {}".format(account["account_id"]))
                     return
+                if "subentry_count" not in r.json():
+                    self.error(500, "Error - no subentry_count found for account {}".format(account["account_id"]))
+                    return
 
                 labels = [network["name"], account["account_id"], account["account_name"]]
                 m_num_sponsored.labels(*labels).set(r.json()["num_sponsored"])
@@ -100,9 +105,13 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
 
                 for balance in r.json()["balances"]:
                     labels = [network["name"], account["account_id"], account["account_name"], balance["asset_type"]]
+
                     m_balance.labels(*labels).set(balance["balance"])
                     m_buying_liabilities.labels(*labels).set(balance["buying_liabilities"])
                     m_selling_liabilities.labels(*labels).set(balance["selling_liabilities"])
+
+                    min_balance = balance["selling_liabilities"] + 0.5 * (2 + r.json()["subentry_count"] + r.json()["num_sponsoring"] - r.json()["num_sponsored"])
+                    m_minimum_balance.labels(*labels).set(min_balance)
 
         output = generate_latest(self.registry)
         self.send_response(200)
