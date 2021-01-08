@@ -55,17 +55,22 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.registry = CollectorRegistry()
-        label_names = ["network", "account_id", "account_name", "asset_type"]
-        m_balance = Gauge("stellar_account_balance", "Stellar core account balance",
-                          label_names, registry=self.registry)
-        m_buying_liabilities = Gauge("stellar_account_buying_liabilities", "Stellar core account buying liabilities",
-                                     label_names, registry=self.registry)
-        m_selling_liabilities = Gauge("stellar_account_selling_liabilities", "Stellar core account selling liabilities",
-                                      label_names, registry=self.registry)
+
+        account_label_names = ["network", "account_id", "account_name"]
         m_num_sponsored = Gauge("stellar_account_num_sponsored", "Stellar core account number of sponsored entries",
-                                label_names, registry=self.registry)
+                                account_label_names, registry=self.registry)
         m_num_sponsoring = Gauge("stellar_account_num_sponsoring", "Stellar core account number of sponsoring entries",
-                                 label_names, registry=self.registry)
+                                 account_label_names, registry=self.registry)
+
+        balance_label_names = account_label_names + ["asset_type"]
+        m_balance = Gauge("stellar_account_balance", "Stellar core account balance",
+                          balance_label_names, registry=self.registry)
+        m_buying_liabilities = Gauge("stellar_account_buying_liabilities", "Stellar core account buying liabilities",
+                                     balance_label_names, registry=self.registry)
+        m_selling_liabilities = Gauge("stellar_account_selling_liabilities", "Stellar core account selling liabilities",
+                                      balance_label_names, registry=self.registry)
+        m_available_balance = Gauge("stellar_account_available_balance", "Stellar core account available balance, i.e. the account balance exceding the minimum required balance of `(2 + subentry_count + num_sponsoring - num_sponsored) * 0.5 + liabilities.selling`",
+                                    balance_label_names, registry=self.registry)
 
         for network in config["networks"]:
             if "accounts" not in network or "name" not in network or "horizon_url" not in network:
@@ -87,22 +92,26 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                 if "balances" not in r.json():
                     self.error(500, "Error - no balances found for account {}".format(account["account_id"]))
                     return
-                if "num_sponsored" not in r.json():
-                    self.error(500, "Error - no num_sponsored found for account {}".format(account["account_id"]))
-                    return
-                if "num_sponsoring" not in r.json():
-                    self.error(500, "Error - no num_sponsoring found for account {}".format(account["account_id"]))
+                if "subentry_count" not in r.json():
+                    self.error(500, "Error - no subentry_count found for account {}".format(account["account_id"]))
                     return
 
                 labels = [network["name"], account["account_id"], account["account_name"]]
-                m_num_sponsored.labels(*labels).set(r.json()["num_sponsored"])
-                m_num_sponsoring.labels(*labels).set(r.json()["num_sponsoring"])
+                m_num_sponsored.labels(*labels).set(r.json().get("num_sponsored", 0))
+                m_num_sponsoring.labels(*labels).set(r.json().get("num_sponsoring", 0))
 
                 for balance in r.json()["balances"]:
                     labels = [network["name"], account["account_id"], account["account_name"], balance["asset_type"]]
+
                     m_balance.labels(*labels).set(balance["balance"])
                     m_buying_liabilities.labels(*labels).set(balance["buying_liabilities"])
                     m_selling_liabilities.labels(*labels).set(balance["selling_liabilities"])
+
+                    # ref: https://github.com/stellar/stellar-protocol/blob/a664806db12635ab4d49b3f006c8f1b578fba8d4/core/cap-0033.md#reserve-requirement
+                    minimum_required_balance = float(balance["selling_liabilities"])
+                    if balance["asset_type"] == "native":
+                        minimum_required_balance += 0.5 * (2 + r.json()["subentry_count"] + r.json().get("num_sponsoring", 0) - r.json().get("num_sponsored", 0))
+                    m_available_balance.labels(*labels).set(float(balance["balance"]) - minimum_required_balance)
 
         output = generate_latest(self.registry)
         self.send_response(200)
