@@ -62,6 +62,9 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
         m_num_sponsoring = Gauge("stellar_account_num_sponsoring", "Stellar core account number of sponsoring entries",
                                  account_label_names, registry=self.registry)
 
+        m_account_exists = Gauge("stellar_account_success", "Displays whether or not stellar core account is present",
+                                    account_label_names, registry=self.registry)
+
         balance_label_names = account_label_names + ["asset_type"]
         m_balance = Gauge("stellar_account_balance", "Stellar core account balance",
                           balance_label_names, registry=self.registry)
@@ -77,6 +80,8 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                 self.error(500, 'Error - invalid network configuration: {}'.format(network))
                 return
             for account in network["accounts"]:
+                account_labels = [network["name"], account["account_id"], account["account_name"]]
+
                 if "account_id" not in account or "account_name" not in account:
                     self.error(500, 'Error - invalid account configuration: {}'.format(account))
                     return
@@ -87,8 +92,8 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                     self.error(504, 'Error retrieving data from {}'.format(url))
                     return
                 if not r.ok:
-                    self.error(504, 'Error retrieving data from {}'.format(url))
-                    return
+                    m_account_exists.labels(*account_labels).set(0)
+                    continue
                 if "balances" not in r.json():
                     self.error(500, "Error - no balances found for account {}".format(account["account_id"]))
                     return
@@ -96,9 +101,9 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                     self.error(500, "Error - no subentry_count found for account {}".format(account["account_id"]))
                     return
 
-                labels = [network["name"], account["account_id"], account["account_name"]]
-                m_num_sponsored.labels(*labels).set(r.json().get("num_sponsored", 0))
-                m_num_sponsoring.labels(*labels).set(r.json().get("num_sponsoring", 0))
+                m_num_sponsored.labels(*account_labels).set(r.json().get("num_sponsored", 0))
+                m_num_sponsoring.labels(*account_labels).set(r.json().get("num_sponsoring", 0))
+                m_account_exists.labels(*account_labels).set(1)
 
                 for balance in r.json()["balances"]:
                     labels = [network["name"], account["account_id"], account["account_name"], balance["asset_type"]]
