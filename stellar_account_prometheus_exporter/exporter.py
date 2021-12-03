@@ -65,7 +65,7 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
         m_num_sponsoring = Gauge("stellar_account_num_sponsoring", "Stellar core account number of sponsoring entries",
                                  account_label_names, registry=self.registry)
 
-        m_account_exists = Gauge("stellar_account_success", "Displays whether or not stellar core account is present",
+        m_account_exists = Gauge("stellar_account_scrape_success", "Indicates whether data was gathered successfully",
                                     account_label_names, registry=self.registry)
 
         balance_label_names = account_label_names + ["asset_type"]
