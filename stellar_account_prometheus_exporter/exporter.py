@@ -78,11 +78,6 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
         m_available_balance = Gauge("stellar_account_available_balance", "Stellar core account available balance, i.e. the account balance exceding the minimum required balance of `(2 + subentry_count + num_sponsoring - num_sponsored) * 0.5 + liabilities.selling`",
                                     balance_label_names, registry=self.registry)
 
-        m_balance_exists = Gauge("stellar_account_balance_success", "Displays whether or not Stellar core account balance is present",
-                                account_label_names, registry=self.registry)
-        m_available_balance_exists = Gauge("stellar_account_available_balance_success", "Displays whether or not Stellar core account available balance is present",
-                                            account_label_names, registry=self.registry)
-
         for network in config["networks"]:
             if "accounts" not in network or "name" not in network or "horizon_url" not in network:
                 self.error(500, 'Error - invalid network configuration: {}'.format(network))
@@ -103,21 +98,15 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                     m_account_exists.labels(*account_labels).set(0)
                     logger.error("Error retrieving data from {}".format(url))
                     continue
-                if "balances" not in r.json():
-                    m_balance_exists.labels(*account_labels).set(0)
-                    logger.error("Error - no balances found for account {}".format(account["account_id"]))
-                    continue
-                if "subentry_count" not in r.json():
-                    m_available_balance_exists.labels(*account_labels).set(0)
-                    logger.error("Error - no subentry_count found for account {}".format(account["account_id"]))
+                if "balances" not in r.json() or "subentry_count" not in r.json():
+                    m_account_exists.labels(*account_labels).set(0)
+                    logger.error("Error - no balances or subentry_count found for account {}".format(account["account_id"]))
                     continue
 
                 m_num_sponsored.labels(*account_labels).set(r.json().get("num_sponsored", 0))
                 m_num_sponsoring.labels(*account_labels).set(r.json().get("num_sponsoring", 0))
 
                 m_account_exists.labels(*account_labels).set(1)
-                m_balance_exists.labels(*account_labels).set(1)
-                m_available_balance_exists.labels(*account_labels).set(1)
 
                 for balance in r.json()["balances"]:
                     labels = [network["name"], account["account_id"], account["account_name"], balance["asset_type"]]
