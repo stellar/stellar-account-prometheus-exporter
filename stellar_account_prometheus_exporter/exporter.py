@@ -2,6 +2,7 @@
 # vim: tabstop=4 expandtab shiftwidth=4
 
 import argparse
+import logging
 import requests
 import yaml
 import threading
@@ -22,7 +23,9 @@ except ImportError:
     unicode = str
     from http.server import BaseHTTPRequestHandler, HTTPServer
     from socketserver import ThreadingMixIn
-
+# Initialize logger
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger("stellar-account-exporter")
 
 parser = argparse.ArgumentParser(description='Exposes staller account balance to prometheus')
 parser.add_argument('--port', type=int,
@@ -62,6 +65,9 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
         m_num_sponsoring = Gauge("stellar_account_num_sponsoring", "Stellar core account number of sponsoring entries",
                                  account_label_names, registry=self.registry)
 
+        m_account_exists = Gauge("stellar_account_scrape_success", "Indicates whether data was gathered successfully",
+                                    account_label_names, registry=self.registry)
+
         balance_label_names = account_label_names + ["asset_type"]
         m_balance = Gauge("stellar_account_balance", "Stellar core account balance",
                           balance_label_names, registry=self.registry)
@@ -77,6 +83,8 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                 self.error(500, 'Error - invalid network configuration: {}'.format(network))
                 return
             for account in network["accounts"]:
+                account_labels = [network["name"], account["account_id"], account["account_name"]]
+
                 if "account_id" not in account or "account_name" not in account:
                     self.error(500, 'Error - invalid account configuration: {}'.format(account))
                     return
@@ -87,18 +95,18 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
                     self.error(504, 'Error retrieving data from {}'.format(url))
                     return
                 if not r.ok:
-                    self.error(504, 'Error retrieving data from {}'.format(url))
-                    return
-                if "balances" not in r.json():
-                    self.error(500, "Error - no balances found for account {}".format(account["account_id"]))
-                    return
-                if "subentry_count" not in r.json():
-                    self.error(500, "Error - no subentry_count found for account {}".format(account["account_id"]))
-                    return
+                    m_account_exists.labels(*account_labels).set(0)
+                    logger.error("Error retrieving data from {}".format(url))
+                    continue
+                if "balances" not in r.json() or "subentry_count" not in r.json():
+                    m_account_exists.labels(*account_labels).set(0)
+                    logger.error("Error - no balances or subentry_count found for account {}".format(account["account_id"]))
+                    continue
 
-                labels = [network["name"], account["account_id"], account["account_name"]]
-                m_num_sponsored.labels(*labels).set(r.json().get("num_sponsored", 0))
-                m_num_sponsoring.labels(*labels).set(r.json().get("num_sponsoring", 0))
+                m_num_sponsored.labels(*account_labels).set(r.json().get("num_sponsored", 0))
+                m_num_sponsoring.labels(*account_labels).set(r.json().get("num_sponsoring", 0))
+
+                m_account_exists.labels(*account_labels).set(1)
 
                 for balance in r.json()["balances"]:
                     labels = [network["name"], account["account_id"], account["account_name"], balance["asset_type"]]
