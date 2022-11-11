@@ -77,3 +77,9 @@ python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 ```
 python3 -m twine upload dist/*
 ```
+
+# Docker and K8s version
+This app is now dockerized. The new Dockerfile has been validated and can be used like this:
+```
+docker build --pull --no-cache -t <your tag>
+```
