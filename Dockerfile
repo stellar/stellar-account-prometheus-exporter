@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg2 wget apt-utils apt-transport-https ca-certificates
 RUN wget -qO - https://apt.stellar.org/SDF.asc | apt-key add - 
