@@ -125,8 +125,10 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-Type', CONTENT_TYPE_LATEST)
         self.end_headers()
-        self.wfile.write(output)
-
+        try:
+            self.wfile.write(output)
+        except BrokenPipeError as e:
+            print(e)
 
 def main():
     httpd = _ThreadingSimpleServer(("", args.port), StellarCoreHandler)
