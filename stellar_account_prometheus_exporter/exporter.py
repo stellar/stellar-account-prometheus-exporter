@@ -8,6 +8,7 @@ import yaml
 import threading
 import time
 from os import environ
+import errno
 
 # Prometheus client library
 from prometheus_client import CollectorRegistry
@@ -16,7 +17,7 @@ from prometheus_client.exposition import CONTENT_TYPE_LATEST, generate_latest
 
 
 try:
-    from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+    from http.server import BaseHTTPRequestHandler, HTTPServer
     from SocketServer import ThreadingMixIn
 except ImportError:
     # Python 3
@@ -127,8 +128,9 @@ class StellarCoreHandler(BaseHTTPRequestHandler):
         self.end_headers()
         try:
             self.wfile.write(output)
-        except BrokenPipeError as e:
-            print(e)
+        except IOError as e:
+            if e.errno == errno.EPIPE:
+                pass
 
 def main():
     httpd = _ThreadingSimpleServer(("", args.port), StellarCoreHandler)
